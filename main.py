@@ -1,5 +1,9 @@
+"""
+Main module to start the programm.
+"""
+
 from time import sleep
-from picamera2 import Picamera2, Preview
+from picamera2 import Picamera2, Preview # pylint: disable=import-error
 
 picam2 = Picamera2()
 camera_config = picam2.create_preview_configuration()
