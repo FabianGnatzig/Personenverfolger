@@ -149,6 +149,7 @@ class ColorCamera:
                 start_point, end_point, position = self.rectangle_from_mask(mask)
 
                 print(f"Object at: {position}")
+                print(self.get_direction(position, mask.shape))
 
                 # draw the rectangle
                 cv2.rectangle(img, start_point, end_point, (0, 255, 0), 2)
@@ -158,6 +159,23 @@ class ColorCamera:
                 cv2.waitKey(0)
         except KeyboardInterrupt:
             print("FINISHED")
+
+    @staticmethod
+    def get_direction(position: tuple, size: tuple):
+        """
+        Prints the direction to move to.
+        :param position: The position of the object.
+        :param size: The size of the image.
+        :return: The direction to move to.
+        """
+        object_x, _ = position
+        _, size_x = size
+
+        if object_x > size_x * 2/3:
+            return "right"
+        if object_x < size_x * 1/3:
+            return "left"
+        return "straight"
 
     @staticmethod
     def rectangle_from_mask(mask: cv2.Mat) -> tuple:
@@ -170,7 +188,7 @@ class ColorCamera:
         contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         # Set max size of rectangle
-        (x1, y1) = mask.shape
+        (y1, x1) = mask.shape
         x2, y2 = 0, 0
 
         # Get size of rectangle
