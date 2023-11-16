@@ -24,11 +24,11 @@ def configure_camera():
     # pylint: disable=used-before-assignment
     _, config_img = cam.read()
 
-    while g_config < 223:
+    while g_config < 255:
         b_config = 0
-        while b_config < 223:
+        while b_config < 255:
             r_config = 0
-            while r_config < 223:
+            while r_config < 255:
                 # Set color borders to new value
                 lower_start = np.array([g_config, b_config, r_config], dtype="uint8")
                 higher_start = np.array(
@@ -45,7 +45,7 @@ def configure_camera():
 
                 # Find big area and show it
                 for contour in config_contours:
-                    if cv2.contourArea(contour) > 6000:
+                    if cv2.contourArea(contour) > 5000:
                         print(f"{g_config}{b_config}{r_config}.jpg")
                         cv2.drawContours(config_img, contour, -1, (255, 0, 0), 3)
                         cv2.imshow(f"{g_config}{b_config}{r_config}.jpg", config_img)
