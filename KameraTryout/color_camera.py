@@ -18,6 +18,7 @@ NEW_REGION_STRING = "###########################################################
 
 # pylint: disable=no-member
 
+
 class ColorCamera:
     """
     Camera class for color detection
@@ -29,6 +30,7 @@ class ColorCamera:
 
         self.g, self.b, self.r = 0, 0, 0
 
+        self.value = np.array([self.g, self.b, self.r])
         self.lower = np.array([self.g, self.b, self.r])
         self.higher = np.array([self.g, self.b, self.r])
 
@@ -54,18 +56,8 @@ class ColorCamera:
             r = input()
             self.set_color_range(r, g, b)
 
-    def configure_camera(self):
-        """
-        A function to configure the camera
-        :return: None
-        """
-        # Define Color and Border
+    def find_color(self, config_img):
         g_config, b_config, r_config = 0, 0, 0
-
-        # Get Image from Cam
-        # pylint: disable=used-before-assignment
-        _, config_img = self.cam.read()
-
         while g_config < MAX_COLOR_RANGE:
             b_config = 0
             while b_config < MAX_COLOR_RANGE:
@@ -88,15 +80,33 @@ class ColorCamera:
                     # Find big area and show it
                     for contour in config_contours:
                         if cv2.contourArea(contour) > 100:
-                            print(f"{g_config}{b_config}{r_config}.jpg")
                             cv2.drawContours(config_img, contour, -1, (255, 0, 0), 3)
-                            cv2.imshow(f"{g_config}{b_config}{r_config}.jpg", config_img)
-                            cv2.waitKey(0)
-                            cv2.destroyAllWindows()
                             continue
+                    cv2.imshow(f"{g_config}{b_config}{r_config}.jpg", config_img)
+                    pressed_key = cv2.waitKey(0)
+                    cv2.destroyAllWindows()
+                    if pressed_key == 27:
+                        return
+
                     r_config += 32
                 b_config += 32
             g_config += 32
+
+    def configure_camera(self):
+        """
+        A function to configure the camera
+        :return: None
+        """
+        # Define Color and Border
+
+
+        # Get Image from Cam
+        # pylint: disable=used-before-assignment
+        _, config_img = self.cam.read()
+
+        hsvImage = cv2.cvtColor(config_img, cv2.COLOR_BGR2HSV)
+
+        self.find_color(hsvImage)
 
         # Get values for filter
         print(NEW_REGION_STRING)
@@ -128,37 +138,49 @@ class ColorCamera:
         print(f"Your selected base-color is {self.g}/{self.b}/{self.r}")
         print(NEW_REGION_STRING)
 
-        self.lower = np.array([self.g, self.b, self.r])
-        self.higher = self.lower + np.array([32, 32, 32])
+        self.value = np.array([self.g, self.b, self.r])
+        self.lower = self.value - np.array([16, 16, 16])
+        self.higher = self.value + np.array([16, 16, 16])
 
     def run(self):
         """
         Runs the program as long as no KeyborExeption.
         :return: None
         """
-        try:
-            while True:
-                _, img = self.cam.read()
 
-                # Create Mask
-                mask = cv2.inRange(img, self.lower, self.higher)
-                mask_cutout = cv2.bitwise_and(img, img, mask=mask)
-                cv2.imshow("Mask Cutout", mask_cutout)
-                cv2.imshow("Mask", mask)
+        while True:
+            _, img = self.cam.read()
 
-                start_point, end_point, position = self.rectangle_from_mask(mask)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-                print(f"Object at: {position}")
-                print(self.get_direction(position, mask.shape))
+            # Create Mask
+            mask = cv2.inRange(img, self.lower, self.higher)
+            mask_cutout = cv2.bitwise_and(img, img, mask=mask)
+            cv2.imshow("Mask Cutout", mask_cutout)
+            cv2.imshow("Mask", mask)
 
-                # draw the rectangle
-                cv2.rectangle(img, start_point, end_point, (0, 255, 0), 2)
+            start_point, end_point, position = self.rectangle_from_mask(mask)
 
-                cv2.imshow("Image with Rect", img)
+            print(f"Object at: {position}")
 
-                cv2.waitKey(0)
-        except KeyboardInterrupt:
-            print("FINISHED")
+            x_value = position[0]
+            img_width = img.shape[1]
+            step = img_width / 180
+            angle = x_value / step - 90
+            print(f"Angle == {angle}")
+
+            print(self.get_direction(position, mask.shape))
+
+            # draw the rectangle
+            cv2.rectangle(img, start_point, end_point, (0, 255, 0), 2)
+
+            cv2.imshow("Image with Rect", img)
+
+            pressed_key = cv2.waitKey(0)
+
+            if pressed_key == 27:
+                print("Finished")
+                return
 
     @staticmethod
     def get_direction(position: tuple, size: tuple):
