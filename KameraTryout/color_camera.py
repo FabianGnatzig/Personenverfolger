@@ -12,7 +12,11 @@ import cv2
 import numpy as np
 from colorama import Fore
 
-MAX_COLOR_RANGE = 255
+H_COLOR_BORDER = 360
+S_COLOR_BORDER = 100
+V_COLOR_BORDER = 100
+BLUR = 15
+
 
 NEW_REGION_STRING = "##############################################################"
 
@@ -28,49 +32,51 @@ class ColorCamera:
         # Define Camera
         self.cam = cv2.VideoCapture(0)
 
-        self.g, self.b, self.r = 0, 0, 0
+        self.h, self.s, self.v = 0, 0, 0
 
-        self.value = np.array([self.g, self.b, self.r])
-        self.lower = np.array([self.g, self.b, self.r])
-        self.higher = np.array([self.g, self.b, self.r])
+        self.value = np.array([0, 0, 0])
+        self.lower = np.array([0, 0, 0])
+        self.higher = np.array([0, 0, 0])
 
         # Show Welcome
         print(Fore.GREEN, NEW_REGION_STRING)
-        print("WELCOME")
-        print(NEW_REGION_STRING)
-        print("Do you want to see the possible farbcodes and sizes? y/n/ov")
-        answer = input()
-        if answer == "y":
-            print("Configuration Started")
-            self.configure_camera()
-
-        elif answer == "ov":
-            # Get values for filter
+        while True:
+            print("WELCOME")
             print(NEW_REGION_STRING)
-            print("Please input Values")
-            print("g:")
-            g = input()
-            print("b:")
-            b = input()
-            print("r:")
-            r = input()
-            self.set_color_range(r, g, b)
+            print("How do you want to configure? y: see all pictures / ov: only insert values (skip config pictures)")
+            answer = input()
 
-    def find_color(self, config_img):
-        g_config, b_config, r_config = 0, 0, 0
-        while g_config < MAX_COLOR_RANGE:
-            b_config = 0
-            while b_config < MAX_COLOR_RANGE:
-                r_config = 0
-                while r_config < MAX_COLOR_RANGE:
+            if answer == "y":
+                print("Configuration Started")
+                self.configure_camera()
+                return
+
+            elif answer == "ov":
+                # Get values for filter
+                h, s, v = self.get_input_values()
+                self.set_color_range(h, s, v)
+                return
+
+    @staticmethod
+    def find_color(config_img):
+        hsv_img = cv2.cvtColor(config_img, cv2.COLOR_BGR2HSV)
+        h, s, v = 0, 0, 0
+        while h < H_COLOR_BORDER:
+            s = 0
+            while s < S_COLOR_BORDER:
+                v = 0
+                while v < V_COLOR_BORDER:
                     # Set color borders to new value
-                    lower_start = np.array([g_config, b_config, r_config])
+                    lower_start = np.array(
+                        [h, s, v]
+                    )
                     higher_start = np.array(
-                        [g_config + 32, b_config + 32, r_config + 32]
+                        [h + 20, s + 25, v + 25]
                     )
 
                     # Create mask with color borers
-                    config_mask = cv2.inRange(config_img, lower_start, higher_start)
+                    config_mask = cv2.inRange(hsv_img, lower_start, higher_start)
+                    config_mask = cv2.blur(config_mask, (BLUR, BLUR))
 
                     # Find Contours
                     config_contours, _ = cv2.findContours(
@@ -80,67 +86,65 @@ class ColorCamera:
                     # Find big area and show it
                     for contour in config_contours:
                         if cv2.contourArea(contour) > 100:
-                            cv2.drawContours(config_img, contour, -1, (255, 0, 0), 3)
+                            cv2.drawContours(hsv_img, contour, -1, (255, 0, 0), 3)
                             continue
-                    cv2.imshow(f"{g_config}{b_config}{r_config}.jpg", config_img)
+
+                    mask_img = cv2.bitwise_and(config_img, config_img, mask=config_mask)
+                    horizontal_stack = np.hstack((config_img, mask_img))
+
+                    cv2.imshow(f"H:{h}; S:{s}; V:{v}", horizontal_stack)
                     pressed_key = cv2.waitKey(0)
                     cv2.destroyAllWindows()
                     if pressed_key == 27:
                         return
 
-                    r_config += 32
-                b_config += 32
-            g_config += 32
+                    v += 25
+                s += 25
+            h += 20
+
+    @staticmethod
+    def get_input_values():
+        while True:
+            print(NEW_REGION_STRING)
+            print("Please input Values")
+            print("h:")
+            h = input()
+            print("s:")
+            s = input()
+            print("v:")
+            v = input()
+
+            try:
+                return int(h), int(s), int(v)
+            except ValueError as e:
+                print(f"NOT ALL VALUES ARE INTEGERS: {e}")
 
     def configure_camera(self):
         """
         A function to configure the camera
         :return: None
         """
-        # Define Color and Border
-
-
         # Get Image from Cam
         # pylint: disable=used-before-assignment
         _, config_img = self.cam.read()
+        self.find_color(config_img)
+        h, s, v = self.get_input_values()
+        self.set_color_range(h, s, v)
 
-        hsvImage = cv2.cvtColor(config_img, cv2.COLOR_BGR2HSV)
-
-        self.find_color(hsvImage)
-
-        # Get values for filter
-        print(NEW_REGION_STRING)
-        print("Please input Values")
-        print("g:")
-        g = input()
-        print("b:")
-        b = input()
-        print("r:")
-        r = input()
-
-        self.set_color_range(r, g, b)
-
-    def set_color_range(self, red: str, green: str, blue: str):
+    def set_color_range(self, h: int, s: int, v: int):
         """
         Converts the string parameters to int and set them.
-        :param red: The red value parameter.
-        :param green: The green value parameter.
-        :param blue: The blue value parameter.
+        :param h: The red value parameter.
+        :param s: The green value parameter.
+        :param v: The blue value parameter.
         :return: None
         """
-        try:
-            self.g, self.r, self.b = int(green), int(red), int(blue)
-
-        except TypeError as e:
-            logging.error(e)
-            self.g, self.b, self.r = 0, 0, 0
-
-        print(f"Your selected base-color is {self.g}/{self.b}/{self.r}")
+        self.h, self.s, self.v = h, s, v
+        print(f"Your selected base-color is {self.h}/{self.s}/{self.v}")
         print(NEW_REGION_STRING)
-
-        self.value = np.array([self.g, self.b, self.r])
-        self.lower = self.value - np.array([16, 16, 16])
-        self.higher = self.value + np.array([16, 16, 16])
+        self.value = np.array([self.h, self.s, self.v])
+        self.lower = self.value
+        self.higher = self.value + np.array([20, 25, 25])
 
     def run(self):
         """
@@ -150,14 +154,13 @@ class ColorCamera:
 
         while True:
             _, img = self.cam.read()
-
+            original_img = img
             img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
             # Create Mask
             mask = cv2.inRange(img, self.lower, self.higher)
+            mask = cv2.blur(mask, (BLUR, BLUR))
             mask_cutout = cv2.bitwise_and(img, img, mask=mask)
-            cv2.imshow("Mask Cutout", mask_cutout)
-            cv2.imshow("Mask", mask)
 
             start_point, end_point, position = self.rectangle_from_mask(mask)
 
@@ -165,8 +168,8 @@ class ColorCamera:
 
             x_value = position[0]
             img_width = img.shape[1]
-            step = img_width / 180
-            angle = x_value / step - 90
+            step = img_width / 90
+            angle = x_value / step - 45
             print(f"Angle == {angle}")
 
             print(self.get_direction(position, mask.shape))
@@ -174,7 +177,13 @@ class ColorCamera:
             # draw the rectangle
             cv2.rectangle(img, start_point, end_point, (0, 255, 0), 2)
 
-            cv2.imshow("Image with Rect", img)
+            converted_mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
+
+            h1_stack = np.hstack((original_img, img))
+            h2_stack = np.hstack((mask_cutout, converted_mask))
+            v_stack = np.vstack((h1_stack, h2_stack))
+
+            cv2.imshow("Image with Rectangle", v_stack)
 
             pressed_key = cv2.waitKey(0)
 
@@ -210,18 +219,18 @@ class ColorCamera:
         contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         # Set max size of rectangle
-        (y1, x1) = mask.shape
-        x2, y2 = 0, 0
+        biggest_area = -1
+        biggest = None
+        for con in contours:
+            area = cv2.contourArea(con)
+            if biggest_area < area:
+                biggest_area = area
+                biggest = con
 
-        # Get size of rectangle
-        for cnt in contours:
-            (x, y), _ = cv2.minEnclosingCircle(cnt)
-            x1 = x if x1 > x else x1
-            y1 = y if y1 > y else y1
-            x2 = x if x2 < x else x2
-            y2 = y if y2 < y else y2
+        if biggest is not None:
+            start_point = biggest.min(axis=0)[0]
+            end_point = biggest.max(axis=0)[0]
+            position = start_point[0] + (end_point[0] - start_point[0]) / 2, start_point[1] + (end_point[1] - start_point[1]) / 2
+            return start_point, end_point, position
 
-        start_point = int(x1), int(y1)
-        end_point = int(x2), int(y2)
-        position = x1 + (x2 - x1) / 2, y1 + (y2 - y1) / 2
-        return start_point, end_point, position
+        return (0, 0), (1, 1), (0, 0)
