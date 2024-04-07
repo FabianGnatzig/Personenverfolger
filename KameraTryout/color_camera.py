@@ -170,6 +170,8 @@ class ColorCamera:
             img_width = img.shape[1]
             step = img_width / 90
             angle = x_value / step - 45
+            if angle < 0:
+                angle + 360
             print(f"Angle == {angle}")
 
             print(self.get_direction(position, mask.shape))
