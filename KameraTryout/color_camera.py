@@ -6,21 +6,11 @@ Contact: fabiangnatzig@gmx.de
 """
 from __future__ import annotations
 
-import logging
+from constants import Constants
 
 import cv2
 import numpy as np
 from colorama import Fore
-
-H_COLOR_BORDER = 179
-S_COLOR_BORDER = 255
-V_COLOR_BORDER = 255
-BLUR = 15
-
-
-NEW_REGION_STRING = "##############################################################"
-
-# pylint: disable=no-member
 
 
 class ColorCamera:
@@ -31,18 +21,15 @@ class ColorCamera:
     def __init__(self):
         # Define Camera
         self.cam = cv2.VideoCapture(0)
-
         self.h, self.s, self.v = 0, 0, 0
-
-        self.value = np.array([0, 0, 0])
-        self.lower = np.array([0, 0, 0])
-        self.higher = np.array([0, 0, 0])
+        self.lower = Constants.NULL_ARRAY
+        self.higher = Constants.NULL_ARRAY
 
         # Show Welcome
-        print(Fore.GREEN, NEW_REGION_STRING)
+        print(Fore.GREEN, Constants.NEW_REGION_STRING)
         while True:
             print("WELCOME")
-            print(NEW_REGION_STRING)
+            print(Constants.NEW_REGION_STRING)
             print("How do you want to configure? y: see all pictures / ov: only insert values (skip config pictures)")
             answer = input()
 
@@ -61,33 +48,23 @@ class ColorCamera:
     def find_color(config_img):
         hsv_img = cv2.cvtColor(config_img, cv2.COLOR_BGR2HSV)
         h, s, v = 0, 0, 0
-        while h < H_COLOR_BORDER:
+        while h < Constants.H_COLOR_BORDER:
             s = 0
-            while s < S_COLOR_BORDER:
+            while s < Constants.S_COLOR_BORDER:
                 v = 0
-                while v < V_COLOR_BORDER:
+                while v < Constants.V_COLOR_BORDER:
                     # Set color borders to new value
-                    lower_start = np.array(
-                        [h, s, v]
-                    )
-                    higher_start = np.array(
-                        [h + 15, s + 32, v + 32]
-                    )
+                    lower_start = np.array([h, s, v])
+                    higher_start = lower_start + np.array([Constants.H_STEP, Constants.S_STEP, Constants.V_STEP])
 
                     # Create mask with color borers
                     config_mask = cv2.inRange(hsv_img, lower_start, higher_start)
-                    config_mask = cv2.blur(config_mask, (BLUR, BLUR))
+                    config_mask = cv2.blur(config_mask, (Constants.BLUR, Constants.BLUR))
 
                     # Find Contours
                     config_contours, _ = cv2.findContours(
                         config_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
                     )
-
-                    # Find big area and show it
-                    for contour in config_contours:
-                        if cv2.contourArea(contour) > 100:
-                            cv2.drawContours(hsv_img, contour, -1, (255, 0, 0), 3)
-                            continue
 
                     mask_img = cv2.bitwise_and(config_img, config_img, mask=config_mask)
                     horizontal_stack = np.hstack((config_img, mask_img))
@@ -95,17 +72,21 @@ class ColorCamera:
                     cv2.imshow(f"H:{h}; S:{s}; V:{v}", horizontal_stack)
                     pressed_key = cv2.waitKey(0)
                     cv2.destroyAllWindows()
-                    if pressed_key == 27:
+                    if pressed_key == Constants.ESC_KEY:
                         return
 
-                    v += 32
-                s += 32
-            h += 15
+                    if pressed_key == Constants.ENTER_KEY:
+                        print(f"H:{h}, S: {s},V: {v}")
+                        return
+
+                    v += Constants.V_STEP
+                s += Constants.S_STEP
+            h += Constants.H_STEP
 
     @staticmethod
     def get_input_values():
         while True:
-            print(NEW_REGION_STRING)
+            print(Constants.NEW_REGION_STRING)
             print("Please input Values")
             print("h:")
             h = input()
@@ -141,10 +122,9 @@ class ColorCamera:
         """
         self.h, self.s, self.v = h, s, v
         print(f"Your selected base-color is {self.h}/{self.s}/{self.v}")
-        print(NEW_REGION_STRING)
-        self.value = np.array([self.h, self.s, self.v])
-        self.lower = self.value
-        self.higher = self.value + np.array([15, 32, 32])
+        print(Constants.NEW_REGION_STRING)
+        self.lower = np.array([self.h, self.s, self.v])
+        self.higher = self.lower + np.array([Constants.H_STEP, Constants.S_STEP, Constants.V_STEP])
 
     def run(self):
         """
@@ -158,8 +138,9 @@ class ColorCamera:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
             # Create Mask
+            print(self.lower, self.higher)
             mask = cv2.inRange(img, self.lower, self.higher)
-            mask = cv2.blur(mask, (BLUR, BLUR))
+            mask = cv2.blur(mask, (Constants.BLUR, Constants.BLUR))
             mask_cutout = cv2.bitwise_and(img, img, mask=mask)
 
             start_point, end_point, position = self.rectangle_from_mask(mask)
@@ -174,41 +155,18 @@ class ColorCamera:
                 angle += 360
             print(f"Angle == {angle}")
 
-            print(self.get_direction(position, mask.shape))
-
             # draw the rectangle
             cv2.rectangle(img, start_point, end_point, (0, 255, 0), 2)
-
             converted_mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
-
             h1_stack = np.hstack((original_img, img))
             h2_stack = np.hstack((mask_cutout, converted_mask))
             v_stack = np.vstack((h1_stack, h2_stack))
-
             cv2.imshow("Image with Rectangle", v_stack)
-
             pressed_key = cv2.waitKey(0)
 
-            if pressed_key == 27:
+            if pressed_key == Constants.ESC_KEY:
                 print("Finished")
                 return
-
-    @staticmethod
-    def get_direction(position: tuple, size: tuple):
-        """
-        Prints the direction to move to.
-        :param position: The position of the object.
-        :param size: The size of the image.
-        :return: The direction to move to.
-        """
-        object_x, _ = position
-        _, size_x = size
-
-        if object_x > size_x * 2/3:
-            return "right"
-        if object_x < size_x * 1/3:
-            return "left"
-        return "straight"
 
     @staticmethod
     def rectangle_from_mask(mask: cv2.Mat) -> tuple:
@@ -232,7 +190,8 @@ class ColorCamera:
         if biggest is not None:
             start_point = biggest.min(axis=0)[0]
             end_point = biggest.max(axis=0)[0]
-            position = start_point[0] + (end_point[0] - start_point[0]) / 2, start_point[1] + (end_point[1] - start_point[1]) / 2
+            position = (start_point[0] + (end_point[0] - start_point[0]) / 2,
+                        start_point[1] + (end_point[1] - start_point[1]) / 2)
             return start_point, end_point, position
 
         return (0, 0), (1, 1), (0, 0)

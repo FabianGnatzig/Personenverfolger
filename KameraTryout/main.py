@@ -5,11 +5,8 @@ Created by Fabian Gnatzig in 2023
 Contact: fabiangnatzig@gmx.de
 """
 from rplidar import RPLidar
-
-
 from color_camera import ColorCamera
 
-# from color_camera import ColorCamera
 
 PORT_NAME = 'COM3'
 DMAX = 4000
