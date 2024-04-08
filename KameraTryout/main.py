@@ -4,15 +4,8 @@ Created for project "Personenverfolger" for DHBW Heidenheim
 Created by Fabian Gnatzig in 2023
 Contact: fabiangnatzig@gmx.de
 """
-import argparse
-
-import cv2 as cv
-import face_recognition
 from rplidar import RPLidar
-import numpy as np
-import time
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+
 
 from color_camera import ColorCamera
 

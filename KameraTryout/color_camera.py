@@ -12,9 +12,9 @@ import cv2
 import numpy as np
 from colorama import Fore
 
-H_COLOR_BORDER = 360
-S_COLOR_BORDER = 100
-V_COLOR_BORDER = 100
+H_COLOR_BORDER = 179
+S_COLOR_BORDER = 255
+V_COLOR_BORDER = 255
 BLUR = 15
 
 
@@ -71,7 +71,7 @@ class ColorCamera:
                         [h, s, v]
                     )
                     higher_start = np.array(
-                        [h + 20, s + 25, v + 25]
+                        [h + 15, s + 32, v + 32]
                     )
 
                     # Create mask with color borers
@@ -98,9 +98,9 @@ class ColorCamera:
                     if pressed_key == 27:
                         return
 
-                    v += 25
-                s += 25
-            h += 20
+                    v += 32
+                s += 32
+            h += 15
 
     @staticmethod
     def get_input_values():
@@ -144,7 +144,7 @@ class ColorCamera:
         print(NEW_REGION_STRING)
         self.value = np.array([self.h, self.s, self.v])
         self.lower = self.value
-        self.higher = self.value + np.array([20, 25, 25])
+        self.higher = self.value + np.array([15, 32, 32])
 
     def run(self):
         """
@@ -171,7 +171,7 @@ class ColorCamera:
             step = img_width / 90
             angle = x_value / step - 45
             if angle < 0:
-                angle + 360
+                angle += 360
             print(f"Angle == {angle}")
 
             print(self.get_direction(position, mask.shape))
