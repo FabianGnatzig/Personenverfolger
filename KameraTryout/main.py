@@ -15,16 +15,15 @@ IMAX = 50
 
 
 def test_lidar():
+    """
+    Test method for LIDAR
+    """
     lidar = RPLidar("COM3")
-    print(lidar.get_info(), lidar.get_health())
-
-    x = lidar.iter_scans()
-    y = enumerate(x)
+    print(f"{lidar.get_info()}, {lidar.get_health()}")
 
     for i, scans in enumerate(lidar.iter_scans()):
-        print('\n%d: Got %d measurments' % (i, len(scans)))
         for measurement in scans:
-            quality, angle, distance = measurement
+            _, angle, distance = measurement
             print(angle, distance)
 
         if i > 10:
@@ -36,6 +35,9 @@ def test_lidar():
 
 
 def camera():
+    """
+    Camera
+    """
     x = ColorCamera()
     x.run()
 

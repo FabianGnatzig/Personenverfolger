@@ -6,12 +6,12 @@ Contact: fabiangnatzig@gmx.de
 """
 from __future__ import annotations
 
-from constants import Constants
-
 import cv2
 import numpy as np
 from colorama import Fore
+from constants import Constants
 
+#pylint: disable = no-member
 
 class ColorCamera:
     """
@@ -30,7 +30,8 @@ class ColorCamera:
         while True:
             print("WELCOME")
             print(Constants.NEW_REGION_STRING)
-            print("How do you want to configure? y: see all pictures / ov: only insert values (skip config pictures)")
+            print("How do you want to configure? y: see all pictures /"
+                  " ov: only insert values (skip config pictures)")
             answer = input()
 
             if answer == "y":
@@ -38,7 +39,7 @@ class ColorCamera:
                 self.configure_camera()
                 return
 
-            elif answer == "ov":
+            if answer == "ov":
                 # Get values for filter
                 h, s, v = self.get_input_values()
                 self.set_color_range(h, s, v)
@@ -46,6 +47,9 @@ class ColorCamera:
 
     @staticmethod
     def find_color(config_img):
+        """
+        Find the right color inside the image.
+        """
         hsv_img = cv2.cvtColor(config_img, cv2.COLOR_BGR2HSV)
         h, s, v = 0, 0, 0
         while h < Constants.H_COLOR_BORDER:
@@ -55,16 +59,13 @@ class ColorCamera:
                 while v < Constants.V_COLOR_BORDER:
                     # Set color borders to new value
                     lower_start = np.array([h, s, v])
-                    higher_start = lower_start + np.array([Constants.H_STEP, Constants.S_STEP, Constants.V_STEP])
+                    higher_start = lower_start + np.array(
+                        [Constants.H_STEP, Constants.S_STEP, Constants.V_STEP]
+                    )
 
                     # Create mask with color borers
                     config_mask = cv2.inRange(hsv_img, lower_start, higher_start)
                     config_mask = cv2.blur(config_mask, (Constants.BLUR, Constants.BLUR))
-
-                    # Find Contours
-                    config_contours, _ = cv2.findContours(
-                        config_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
-                    )
 
                     mask_img = cv2.bitwise_and(config_img, config_img, mask=config_mask)
                     horizontal_stack = np.hstack((config_img, mask_img))
@@ -85,6 +86,9 @@ class ColorCamera:
 
     @staticmethod
     def get_input_values():
+        """
+        Static method to get the color values from user
+        """
         while True:
             print(Constants.NEW_REGION_STRING)
             print("Please input Values")
@@ -158,9 +162,8 @@ class ColorCamera:
             # draw the rectangle
             cv2.rectangle(img, start_point, end_point, (0, 255, 0), 2)
             converted_mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
-            h1_stack = np.hstack((original_img, img))
-            h2_stack = np.hstack((mask_cutout, converted_mask))
-            v_stack = np.vstack((h1_stack, h2_stack))
+            v_stack = np.vstack((np.hstack((original_img, img)),
+                                 np.hstack((mask_cutout, converted_mask))))
             cv2.imshow("Image with Rectangle", v_stack)
             pressed_key = cv2.waitKey(0)
 

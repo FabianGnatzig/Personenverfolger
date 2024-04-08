@@ -2,9 +2,12 @@
 Created by Fabian Gnatzig in 2024
 Contact: fabiangnatzig@gmx.de
 """
+import dataclasses
+
 import numpy as np
 
 
+@dataclasses.dataclass
 class Constants:
     """
     Constants class for camera.
