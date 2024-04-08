@@ -1,3 +1,4 @@
 opencv-python==4.8.1.78
 numpy==1.26.2
 colorama==0.4.6
+rplidar-robotica==0.9.5
