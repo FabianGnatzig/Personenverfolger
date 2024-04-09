@@ -4,34 +4,22 @@ Created for project "Personenverfolger" for DHBW Heidenheim
 Created by Fabian Gnatzig in 2023
 Contact: fabiangnatzig@gmx.de
 """
-from rplidar import RPLidar
-from color_camera import ColorCamera
+import logging
 
+from color_camera import ColorCamera
+from custom_formatter import CustomFormatter
+from lidar import Lidar
 
 PORT_NAME = 'COM3'
-DMAX = 4000
-IMIN = 0
-IMAX = 50
+log = logging.getLogger("log")
 
 
-def test_lidar():
+def lidar():
     """
     Test method for LIDAR
     """
-    lidar = RPLidar("COM3")
-    print(f"{lidar.get_info()}, {lidar.get_health()}")
-
-    for i, scans in enumerate(lidar.iter_scans()):
-        for measurement in scans:
-            _, angle, distance = measurement
-            print(angle, distance)
-
-        if i > 10:
-            break
-
-    lidar.stop()
-    lidar.stop_motor()
-    lidar.disconnect()
+    lidar_sensor = Lidar(PORT_NAME)
+    lidar_sensor.test_mesurement()
 
 
 def camera():
@@ -43,4 +31,12 @@ def camera():
 
 
 if __name__ == '__main__':
+    log.setLevel(logging.DEBUG)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+
+    ch.setFormatter(CustomFormatter())
+    log.addHandler(ch)
+
     camera()

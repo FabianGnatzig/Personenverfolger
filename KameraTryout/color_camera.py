@@ -6,12 +6,18 @@ Contact: fabiangnatzig@gmx.de
 """
 from __future__ import annotations
 
+import logging
+
 import cv2
 import numpy as np
 from colorama import Fore
 from constants import Constants
 
-#pylint: disable = no-member
+log = logging.getLogger("log")
+
+
+# pylint: disable = no-member
+
 
 class ColorCamera:
     """
@@ -77,7 +83,7 @@ class ColorCamera:
                         return
 
                     if pressed_key == Constants.ENTER_KEY:
-                        print(f"H:{h}, S: {s},V: {v}")
+                        log.info(f"H:{h}, S: {s},V: {v}")
                         return
 
                     v += Constants.V_STEP
@@ -102,7 +108,7 @@ class ColorCamera:
             try:
                 return int(h), int(s), int(v)
             except ValueError as e:
-                print(f"NOT ALL VALUES ARE INTEGERS: {e}")
+                log.error(f"NOT ALL VALUES ARE INTEGERS: {e}")
 
     def configure_camera(self):
         """
@@ -125,16 +131,17 @@ class ColorCamera:
         :return: None
         """
         self.h, self.s, self.v = h, s, v
-        print(f"Your selected base-color is {self.h}/{self.s}/{self.v}")
-        print(Constants.NEW_REGION_STRING)
+        log.info(f"Your selected base-color is {self.h}/{self.s}/{self.v}")
+        # print(Constants.NEW_REGION_STRING)
         self.lower = np.array([self.h, self.s, self.v])
         self.higher = self.lower + np.array([Constants.H_STEP, Constants.S_STEP, Constants.V_STEP])
 
     def run(self):
         """
-        Runs the program as long as no KeyborExeption.
+        Runs the program as long as no KeybordExeption.
         :return: None
         """
+        log.info(f"Parameters: {self.lower}, {self.higher}")
 
         while True:
             _, img = self.cam.read()
@@ -142,14 +149,13 @@ class ColorCamera:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
             # Create Mask
-            print(self.lower, self.higher)
             mask = cv2.inRange(img, self.lower, self.higher)
             mask = cv2.blur(mask, (Constants.BLUR, Constants.BLUR))
             mask_cutout = cv2.bitwise_and(img, img, mask=mask)
 
             start_point, end_point, position = self.rectangle_from_mask(mask)
 
-            print(f"Object at: {position}")
+            log.info(f"Object at: {position}")
 
             x_value = position[0]
             img_width = img.shape[1]
@@ -157,7 +163,7 @@ class ColorCamera:
             angle = x_value / step - 45
             if angle < 0:
                 angle += 360
-            print(f"Angle == {angle}")
+            log.info(f"Angle: {angle}")
 
             # draw the rectangle
             cv2.rectangle(img, start_point, end_point, (0, 255, 0), 2)
@@ -168,7 +174,7 @@ class ColorCamera:
             pressed_key = cv2.waitKey(0)
 
             if pressed_key == Constants.ESC_KEY:
-                print("Finished")
+                log.info("Finished")
                 return
 
     @staticmethod
