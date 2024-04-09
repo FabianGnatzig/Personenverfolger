@@ -14,12 +14,18 @@ PORT_NAME = 'COM3'
 log = logging.getLogger("log")
 
 
+def main():
+    setup_logging()
+    #camera()
+    lidar()
+
+
 def lidar():
     """
     Test method for LIDAR
     """
     lidar_sensor = Lidar(PORT_NAME)
-    lidar_sensor.test_mesurement()
+    lidar_sensor.test_measurement()
 
 
 def camera():
@@ -30,7 +36,10 @@ def camera():
     x.run()
 
 
-if __name__ == '__main__':
+def setup_logging():
+    """
+    Setup th logging.
+    """
     log.setLevel(logging.DEBUG)
 
     ch = logging.StreamHandler()
@@ -39,4 +48,6 @@ if __name__ == '__main__':
     ch.setFormatter(CustomFormatter())
     log.addHandler(ch)
 
-    camera()
+
+if __name__ == '__main__':
+    main()

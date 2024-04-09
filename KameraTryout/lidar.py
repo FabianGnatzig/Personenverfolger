@@ -15,14 +15,13 @@ class Lidar:
     """
 
     def __init__(self, port: str):
-
         self._port = port
         try:
             self._sensor = RPLidar(port)
         except Exception as ex:
             print(ex)
 
-    def test_mesurement(self):
+    def test_measurement(self):
         """
         Test method.
         """
@@ -31,7 +30,7 @@ class Lidar:
         for i, scans in enumerate(self._sensor.iter_scans()):
             for measurement in scans:
                 _, angle, distance = measurement
-                print(angle, distance)
+                log.info(f"Angle: {angle}; Distance: {distance}")
 
             if i > 10:
                 break
