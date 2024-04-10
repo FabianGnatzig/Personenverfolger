@@ -26,10 +26,10 @@ class ColorCamera:
 
     def __init__(self):
         # Define Camera
-        self.cam = cv2.VideoCapture(0)
-        self.h, self.s, self.v = 0, 0, 0
-        self.lower = Constants.NULL_ARRAY
-        self.higher = Constants.NULL_ARRAY
+        self._cam = cv2.VideoCapture(0)
+        self._h, self._s, self._v = 0, 0, 0
+        self._lower = Constants.NULL_ARRAY
+        self._higher = Constants.NULL_ARRAY
 
         # Show Welcome
         print(Fore.GREEN, Constants.NEW_REGION_STRING)
@@ -42,17 +42,17 @@ class ColorCamera:
 
             if answer == "y":
                 print("Configuration Started")
-                self.configure_camera()
+                self._configure_camera()
                 return
 
             if answer == "ov":
                 # Get values for filter
-                h, s, v = self.get_input_values()
-                self.set_color_range(h, s, v)
+                h, s, v = self._get_input_values()
+                self._set_color_range(h, s, v)
                 return
 
     @staticmethod
-    def find_color(config_img):
+    def _find_color(config_img):
         """
         Find the right color inside the image.
         """
@@ -91,7 +91,7 @@ class ColorCamera:
             h += Constants.H_STEP
 
     @staticmethod
-    def get_input_values():
+    def _get_input_values():
         """
         Static method to get the color values from user
         """
@@ -110,19 +110,19 @@ class ColorCamera:
             except ValueError as e:
                 log.error(f"NOT ALL VALUES ARE INTEGERS: {e}")
 
-    def configure_camera(self):
+    def _configure_camera(self):
         """
         A function to configure the camera
         :return: None
         """
         # Get Image from Cam
         # pylint: disable=used-before-assignment
-        _, config_img = self.cam.read()
-        self.find_color(config_img)
-        h, s, v = self.get_input_values()
-        self.set_color_range(h, s, v)
+        _, config_img = self._cam.read()
+        self._find_color(config_img)
+        h, s, v = self._get_input_values()
+        self._set_color_range(h, s, v)
 
-    def set_color_range(self, h: int, s: int, v: int):
+    def _set_color_range(self, h: int, s: int, v: int):
         """
         Converts the string parameters to int and set them.
         :param h: The red value parameter.
@@ -130,30 +130,30 @@ class ColorCamera:
         :param v: The blue value parameter.
         :return: None
         """
-        self.h, self.s, self.v = h, s, v
-        log.info(f"Your selected base-color is {self.h}/{self.s}/{self.v}")
+        self._h, self._s, self._v = h, s, v
+        log.info(f"Your selected base-color is {self._h}/{self._s}/{self._v}")
         # print(Constants.NEW_REGION_STRING)
-        self.lower = np.array([self.h, self.s, self.v])
-        self.higher = self.lower + np.array([Constants.H_STEP, Constants.S_STEP, Constants.V_STEP])
+        self._lower = np.array([self._h, self._s, self._v])
+        self._higher = self._lower + np.array([Constants.H_STEP, Constants.S_STEP, Constants.V_STEP])
 
     def run(self):
         """
         Runs the program as long as no KeybordExeption.
         :return: None
         """
-        log.info(f"Parameters: {self.lower}, {self.higher}")
+        log.info(f"Parameters: {self._lower}, {self._higher}")
 
         while True:
-            _, img = self.cam.read()
+            _, img = self._cam.read()
             original_img = img
             img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
             # Create Mask
-            mask = cv2.inRange(img, self.lower, self.higher)
+            mask = cv2.inRange(img, self._lower, self._higher)
             mask = cv2.blur(mask, (Constants.BLUR, Constants.BLUR))
             mask_cutout = cv2.bitwise_and(img, img, mask=mask)
 
-            start_point, end_point, position = self.rectangle_from_mask(mask)
+            start_point, end_point, position = self._rectangle_from_mask(mask)
 
             log.info(f"Object at: {position}")
 
@@ -178,7 +178,7 @@ class ColorCamera:
                 return
 
     @staticmethod
-    def rectangle_from_mask(mask: cv2.Mat) -> tuple:
+    def _rectangle_from_mask(mask: cv2.Mat) -> tuple:
         """
         Returns a rectangle on size of the existing mask.
         :param mask: The mask of the image.

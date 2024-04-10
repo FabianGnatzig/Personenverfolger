@@ -37,8 +37,8 @@ def lidar():
         log.info(f"Number of measurements {len(lidar_sensor.measurements)}")
         log.info(f"Number of angled measurements {len(lidar_sensor.angle_measurements)}")
 
-        for andist in lidar_sensor.angle_measurements:
-            log.info(andist)
+        for (angle, distance) in lidar_sensor.angle_measurements:
+            log.info(f"{angle}, {distance}")
 
         time.sleep(0.5)
         i += 1
