@@ -18,8 +18,8 @@ log = logging.getLogger("log")
 
 def main():
     setup_logging()
-    #camera()
-    lidar()
+    camera()
+    #lidar()
 
 
 def lidar():

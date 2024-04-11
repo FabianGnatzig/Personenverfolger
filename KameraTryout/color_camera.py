@@ -73,6 +73,13 @@ class ColorCamera:
                     config_mask = cv2.inRange(hsv_img, lower_start, higher_start)
                     config_mask = cv2.blur(config_mask, (Constants.BLUR, Constants.BLUR))
 
+                    contours = cv2.findContours(config_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+                    if contours == ((), None):
+                        log.debug(f"H:{h}; S:{s}; V:{v} has no contours")
+                        v += Constants.V_STEP
+                        continue
+
                     mask_img = cv2.bitwise_and(config_img, config_img, mask=config_mask)
                     horizontal_stack = np.hstack((config_img, mask_img))
 
@@ -171,9 +178,9 @@ class ColorCamera:
             v_stack = np.vstack((np.hstack((original_img, img)),
                                  np.hstack((mask_cutout, converted_mask))))
             cv2.imshow("Image with Rectangle", v_stack)
-            pressed_key = cv2.waitKey(0)
+            #pressed_key = cv2.waitKey(0)
 
-            if pressed_key == Constants.ESC_KEY:
+            if cv2.waitKey(1) == Constants.ESC_KEY:
                 log.info("Finished")
                 return
 
