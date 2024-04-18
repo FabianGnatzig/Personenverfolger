@@ -30,6 +30,7 @@ class ColorCamera:
         self._h, self._s, self._v = 0, 0, 0
         self._lower = Constants.NULL_ARRAY
         self._higher = Constants.NULL_ARRAY
+        self._angle = 360.0
 
         # Show Welcome
         print(Fore.GREEN, Constants.NEW_REGION_STRING)
@@ -139,7 +140,6 @@ class ColorCamera:
         """
         self._h, self._s, self._v = h, s, v
         log.info(f"Your selected base-color is {self._h}/{self._s}/{self._v}")
-        # print(Constants.NEW_REGION_STRING)
         self._lower = np.array([self._h, self._s, self._v])
         self._higher = self._lower + np.array([Constants.H_STEP, Constants.S_STEP, Constants.V_STEP])
 
@@ -162,23 +162,26 @@ class ColorCamera:
 
             start_point, end_point, position = self._rectangle_from_mask(mask)
 
-            log.info(f"Object at: {position}")
+            if position:
+                log.info(f"Object at: {position}")
 
-            x_value = position[0]
-            img_width = img.shape[1]
-            step = img_width / 90
-            angle = x_value / step - 45
-            if angle < 0:
-                angle += 360
-            log.info(f"Angle: {angle}")
+                x_value = position[0]
+                img_width = img.shape[1]
+                step = img_width / 90
+                angle = x_value / step - 45
+                if angle < 0:
+                    angle += 360
+                self._angle = angle
 
-            # draw the rectangle
-            cv2.rectangle(img, start_point, end_point, (0, 255, 0), 2)
+                log.info(f"Angle: {angle}")
+                cv2.rectangle(img, start_point, end_point, (0, 255, 0), 2)
+            else:
+                log.info(f"Object not found; Last Angle: {self._angle}")
             converted_mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
             v_stack = np.vstack((np.hstack((original_img, img)),
                                  np.hstack((mask_cutout, converted_mask))))
             cv2.imshow("Image with Rectangle", v_stack)
-            #pressed_key = cv2.waitKey(0)
+            # pressed_key = cv2.waitKey(0)
 
             if cv2.waitKey(1) == Constants.ESC_KEY:
                 log.info("Finished")
@@ -210,4 +213,8 @@ class ColorCamera:
                         start_point[1] + (end_point[1] - start_point[1]) / 2)
             return start_point, end_point, position
 
-        return (0, 0), (1, 1), (0, 0)
+        return None, None, None
+
+    @property
+    def angle(self):
+        return self._angle
