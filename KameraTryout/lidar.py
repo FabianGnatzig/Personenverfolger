@@ -6,7 +6,6 @@ import logging
 import time
 
 from rplidar import RPLidar
-
 log = logging.getLogger("log")
 
 
@@ -51,6 +50,7 @@ class Lidar:
                 continue
 
             angle_measurements.append((angle, distance))
+
         self._angle_measurements = angle_measurements
 
     @property

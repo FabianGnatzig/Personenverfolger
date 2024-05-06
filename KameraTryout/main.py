@@ -11,6 +11,9 @@ from threading import Thread
 from color_camera import ColorCamera
 from custom_formatter import CustomFormatter
 from lidar import Lidar
+import matplotlib.pyplot as plt
+
+import numpy as np
 
 PORT_NAME = 'COM3'
 log = logging.getLogger("log")
@@ -18,8 +21,8 @@ log = logging.getLogger("log")
 
 def main():
     setup_logging()
-    camera()
-    #lidar()
+    #camera()
+    lidar()
 
 
 def lidar():
@@ -33,15 +36,27 @@ def lidar():
 
     i = 0
 
-    while i < 10:
+    while i < 4:
         log.info(f"Number of measurements {len(lidar_sensor.measurements)}")
         log.info(f"Number of angled measurements {len(lidar_sensor.angle_measurements)}")
 
+        distance_array = []
+
         for (angle, distance) in lidar_sensor.angle_measurements:
             log.info(f"{angle}, {distance}")
+            distance_array.append(distance)
+
+        plt.plot(lidar_sensor.angle_measurements)
+
+        if lidar_sensor.angle_measurements:
+            print("YEET", distance_array)
+            plt.plot(np.diff(distance_array))
+
+        plt.show()
 
         time.sleep(0.5)
         i += 1
+
 
     lidar_sensor.run = False
     lidar_thread.join()
