@@ -36,27 +36,26 @@ def lidar():
 
     i = 0
 
-    while i < 4:
-        log.info(f"Number of measurements {len(lidar_sensor.measurements)}")
-        log.info(f"Number of angled measurements {len(lidar_sensor.angle_measurements)}")
+    try:
 
-        distance_array = []
+        while i < 6:
+            log.info(f"Number of measurements {len(lidar_sensor.measurements)}")
+            log.info(f"Number of angled measurements {len(lidar_sensor.target_measurements)}")
 
-        for (angle, distance) in lidar_sensor.angle_measurements:
-            log.info(f"{angle}, {distance}")
-            distance_array.append(distance)
+            distance_array = []
 
-        plt.plot(lidar_sensor.angle_measurements)
+            log.info(f" WALL {lidar_sensor.wall_measurements}")
 
-        if lidar_sensor.angle_measurements:
-            print("YEET", distance_array)
-            plt.plot(np.diff(distance_array))
+            if len(lidar_sensor.target_measurements):
+                log.info(f"target = {lidar_sensor.target_measurements[0]}, distance: {lidar_sensor.target_measurements[1]}")
 
-        plt.show()
+            # plt.show()
 
-        time.sleep(0.5)
-        i += 1
+            time.sleep(2)
+            i += 1
 
+    except Exception as ex:
+        print(ex)
 
     lidar_sensor.run = False
     lidar_thread.join()
@@ -81,6 +80,18 @@ def setup_logging():
 
     ch.setFormatter(CustomFormatter())
     log.addHandler(ch)
+
+
+def get_angle(first: float, second: float):
+    """
+    Get the angle between 315 and 45 degree.
+    """
+    midpoint = (first + second) / 2
+
+    if abs(first - second) > 180:
+        midpoint += 180
+
+    return float
 
 
 if __name__ == '__main__':
