@@ -31,6 +31,7 @@ class ColorCamera:
         self._lower = Constants.NULL_ARRAY
         self._higher = Constants.NULL_ARRAY
         self._angle = 360.0
+        self._run = True
 
         # Show Welcome
         print(Fore.GREEN, Constants.NEW_REGION_STRING)
@@ -150,7 +151,7 @@ class ColorCamera:
         """
         log.info(f"Parameters: {self._lower}, {self._higher}")
 
-        while True:
+        while self._run:
             _, img = self._cam.read()
             original_img = img
             img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -163,7 +164,7 @@ class ColorCamera:
             start_point, end_point, position = self._rectangle_from_mask(mask)
 
             if position:
-                log.info(f"Object at: {position}")
+                #log.info(f"Object at: {position}")
 
                 x_value = position[0]
                 img_width = img.shape[1]
@@ -173,10 +174,11 @@ class ColorCamera:
                     angle += 360
                 self._angle = angle
 
-                log.info(f"Angle: {angle}")
+                #log.info(f"Angle: {angle}")
                 cv2.rectangle(img, start_point, end_point, (0, 255, 0), 2)
             else:
-                log.info(f"Object not found; Last Angle: {self._angle}")
+                pass
+                #log.info(f"Object not found; Last Angle: {self._angle}")
             converted_mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
             v_stack = np.vstack((np.hstack((original_img, img)),
                                  np.hstack((mask_cutout, converted_mask))))
@@ -218,3 +220,9 @@ class ColorCamera:
     @property
     def angle(self):
         return self._angle
+
+    def stop(self):
+        """
+        Stops the run method.
+        """
+        self._run = False

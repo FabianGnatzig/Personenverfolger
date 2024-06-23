@@ -36,7 +36,7 @@ class Lidar:
         except Exception as ex:
             print(ex)
 
-    def test_measurement(self):
+    def measurement(self):
         """
         Test method.
         """
