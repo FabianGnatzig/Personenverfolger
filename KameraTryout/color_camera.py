@@ -219,6 +219,10 @@ class ColorCamera:
 
     @property
     def angle(self):
+        """
+        Retruns the angle property.
+        :return: The angle property.
+        """
         return self._angle
 
     def stop(self):

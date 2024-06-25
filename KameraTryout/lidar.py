@@ -38,7 +38,8 @@ class Lidar:
 
     def measurement(self):
         """
-        Test method.
+        Measures the object from the LIDAR sensor.
+        :return: None
         """
         log.info(f"{self._sensor.get_info()}, {self._sensor.get_health()}")
         self._ready = True
@@ -56,6 +57,11 @@ class Lidar:
         self._sensor.disconnect()
 
     def get_target_angle_measurements(self, measurements):
+        """
+        Get the angle and the distance of the specific target.
+        :param measurements: The measurements of the last LIDAR-scan.
+        :return: None
+        """
         target_measurements = []
         small = []
         big = []
@@ -106,6 +112,11 @@ class Lidar:
         self._target_measurements = target
 
     def get_wall_measurements(self, measurements):
+        """
+        Sets the wall measurements for specific angles.
+        :param measurements: The measurements of the last LIDAR-scan.
+        :return: None
+        """
         for _, angle, distance in measurements:
             if 360 - WALL_ANGLE_DELTA >= angle <= 0 + WALL_ANGLE_DELTA:
                 self._wall_measurements["0"] = distance
@@ -126,30 +137,60 @@ class Lidar:
 
     @property
     def measurements(self):
+        """
+        Returns the measurement property.
+        :return: The measurement property.
+        """
         return self._measurements
 
     @property
     def run(self):
+        """
+        Returns the run value.
+        :return: The run value.
+        """
         return self._run
 
     @run.setter
     def run(self, value: bool):
+        """
+        Sets the run value.
+        :param value: The new run value.
+        :return: None
+        """
         self._run = value
 
     @property
     def ready(self):
+        """
+        Returns the ready value.
+        :return: The ready value.
+        """
         return self._ready
 
     @ready.setter
     def ready(self, value: bool):
+        """
+        Sets the ready value.
+        :param value: The new ready value.
+        :return: None
+        """
         self._ready = value
 
     @property
     def target_measurements(self):
+        """
+        Returns the target measurement property.
+        :return: The target measurement property.
+        """
         return self._target_measurements
 
     @property
     def wall_measurements(self):
+        """
+        Returns the wall measurements property.
+        :return: The wall measurements property.
+        """
         return self._wall_measurements
 
     @staticmethod

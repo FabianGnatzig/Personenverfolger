@@ -28,6 +28,11 @@ class CustomFormatter(logging.Formatter):
     }
 
     def format(self, record):
+        """
+        Formats the record.
+        :param record: The incoming record that should log.
+        :return: The formated record.
+        """
         log_fmt = self.FORMATS.get(record.levelno)
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
