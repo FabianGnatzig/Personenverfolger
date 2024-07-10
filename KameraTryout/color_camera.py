@@ -6,12 +6,18 @@ Contact: fabiangnatzig@gmx.de
 """
 from __future__ import annotations
 
+import logging
+
 import cv2
 import numpy as np
 from colorama import Fore
 from constants import Constants
 
-#pylint: disable = no-member
+log = logging.getLogger("log")
+
+
+# pylint: disable = no-member
+
 
 class ColorCamera:
     """
@@ -20,10 +26,12 @@ class ColorCamera:
 
     def __init__(self):
         # Define Camera
-        self.cam = cv2.VideoCapture(0)
-        self.h, self.s, self.v = 0, 0, 0
-        self.lower = Constants.NULL_ARRAY
-        self.higher = Constants.NULL_ARRAY
+        self._cam = cv2.VideoCapture(0)
+        self._h, self._s, self._v = 0, 0, 0
+        self._lower = Constants.NULL_ARRAY
+        self._higher = Constants.NULL_ARRAY
+        self._angle = 360.0
+        self._run = True
 
         # Show Welcome
         print(Fore.GREEN, Constants.NEW_REGION_STRING)
@@ -36,17 +44,17 @@ class ColorCamera:
 
             if answer == "y":
                 print("Configuration Started")
-                self.configure_camera()
+                self._configure_camera()
                 return
 
             if answer == "ov":
                 # Get values for filter
-                h, s, v = self.get_input_values()
-                self.set_color_range(h, s, v)
+                h, s, v = self._get_input_values()
+                self._set_color_range(h, s, v)
                 return
 
     @staticmethod
-    def find_color(config_img):
+    def _find_color(config_img):
         """
         Find the right color inside the image.
         """
@@ -67,6 +75,13 @@ class ColorCamera:
                     config_mask = cv2.inRange(hsv_img, lower_start, higher_start)
                     config_mask = cv2.blur(config_mask, (Constants.BLUR, Constants.BLUR))
 
+                    contours = cv2.findContours(config_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+                    if contours == ((), None):
+                        log.debug(f"H:{h}; S:{s}; V:{v} has no contours")
+                        v += Constants.V_STEP
+                        continue
+
                     mask_img = cv2.bitwise_and(config_img, config_img, mask=config_mask)
                     horizontal_stack = np.hstack((config_img, mask_img))
 
@@ -77,7 +92,7 @@ class ColorCamera:
                         return
 
                     if pressed_key == Constants.ENTER_KEY:
-                        print(f"H:{h}, S: {s},V: {v}")
+                        log.info(f"H:{h}, S: {s},V: {v}")
                         return
 
                     v += Constants.V_STEP
@@ -85,7 +100,7 @@ class ColorCamera:
             h += Constants.H_STEP
 
     @staticmethod
-    def get_input_values():
+    def _get_input_values():
         """
         Static method to get the color values from user
         """
@@ -102,21 +117,21 @@ class ColorCamera:
             try:
                 return int(h), int(s), int(v)
             except ValueError as e:
-                print(f"NOT ALL VALUES ARE INTEGERS: {e}")
+                log.error(f"NOT ALL VALUES ARE INTEGERS: {e}")
 
-    def configure_camera(self):
+    def _configure_camera(self):
         """
         A function to configure the camera
         :return: None
         """
         # Get Image from Cam
         # pylint: disable=used-before-assignment
-        _, config_img = self.cam.read()
-        self.find_color(config_img)
-        h, s, v = self.get_input_values()
-        self.set_color_range(h, s, v)
+        _, config_img = self._cam.read()
+        self._find_color(config_img)
+        h, s, v = self._get_input_values()
+        self._set_color_range(h, s, v)
 
-    def set_color_range(self, h: int, s: int, v: int):
+    def _set_color_range(self, h: int, s: int, v: int):
         """
         Converts the string parameters to int and set them.
         :param h: The red value parameter.
@@ -124,55 +139,58 @@ class ColorCamera:
         :param v: The blue value parameter.
         :return: None
         """
-        self.h, self.s, self.v = h, s, v
-        print(f"Your selected base-color is {self.h}/{self.s}/{self.v}")
-        print(Constants.NEW_REGION_STRING)
-        self.lower = np.array([self.h, self.s, self.v])
-        self.higher = self.lower + np.array([Constants.H_STEP, Constants.S_STEP, Constants.V_STEP])
+        self._h, self._s, self._v = h, s, v
+        log.info(f"Your selected base-color is {self._h}/{self._s}/{self._v}")
+        self._lower = np.array([self._h, self._s, self._v])
+        self._higher = self._lower + np.array([Constants.H_STEP, Constants.S_STEP, Constants.V_STEP])
 
     def run(self):
         """
-        Runs the program as long as no KeyborExeption.
+        Runs the program as long as no KeybordExeption.
         :return: None
         """
+        log.info(f"Parameters: {self._lower}, {self._higher}")
 
-        while True:
-            _, img = self.cam.read()
+        while self._run:
+            _, img = self._cam.read()
             original_img = img
             img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
             # Create Mask
-            print(self.lower, self.higher)
-            mask = cv2.inRange(img, self.lower, self.higher)
+            mask = cv2.inRange(img, self._lower, self._higher)
             mask = cv2.blur(mask, (Constants.BLUR, Constants.BLUR))
             mask_cutout = cv2.bitwise_and(img, img, mask=mask)
 
-            start_point, end_point, position = self.rectangle_from_mask(mask)
+            start_point, end_point, position = self._rectangle_from_mask(mask)
 
-            print(f"Object at: {position}")
+            if position:
+                #log.info(f"Object at: {position}")
 
-            x_value = position[0]
-            img_width = img.shape[1]
-            step = img_width / 90
-            angle = x_value / step - 45
-            if angle < 0:
-                angle += 360
-            print(f"Angle == {angle}")
+                x_value = position[0]
+                img_width = img.shape[1]
+                step = img_width / 90
+                angle = x_value / step - 45
+                if angle < 0:
+                    angle += 360
+                self._angle = angle
 
-            # draw the rectangle
-            cv2.rectangle(img, start_point, end_point, (0, 255, 0), 2)
+                #log.info(f"Angle: {angle}")
+                cv2.rectangle(img, start_point, end_point, (0, 255, 0), 2)
+            else:
+                pass
+                #log.info(f"Object not found; Last Angle: {self._angle}")
             converted_mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
             v_stack = np.vstack((np.hstack((original_img, img)),
                                  np.hstack((mask_cutout, converted_mask))))
             cv2.imshow("Image with Rectangle", v_stack)
-            pressed_key = cv2.waitKey(0)
+            # pressed_key = cv2.waitKey(0)
 
-            if pressed_key == Constants.ESC_KEY:
-                print("Finished")
+            if cv2.waitKey(1) == Constants.ESC_KEY:
+                log.info("Finished")
                 return
 
     @staticmethod
-    def rectangle_from_mask(mask: cv2.Mat) -> tuple:
+    def _rectangle_from_mask(mask: cv2.Mat) -> tuple:
         """
         Returns a rectangle on size of the existing mask.
         :param mask: The mask of the image.
@@ -197,4 +215,18 @@ class ColorCamera:
                         start_point[1] + (end_point[1] - start_point[1]) / 2)
             return start_point, end_point, position
 
-        return (0, 0), (1, 1), (0, 0)
+        return None, None, None
+
+    @property
+    def angle(self):
+        """
+        Retruns the angle property.
+        :return: The angle property.
+        """
+        return self._angle
+
+    def stop(self):
+        """
+        Stops the run method.
+        """
+        self._run = False
